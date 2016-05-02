@@ -7,7 +7,7 @@ import time
 import os
 from six.moves import cPickle
 
-from utils import TextLoader
+from utils_original import TextLoader
 from model import Model
 
 def main():
@@ -29,6 +29,7 @@ def sample(args):
         saved_args = cPickle.load(f)
     with open(os.path.join(args.save_dir, 'chars_vocab.pkl'), 'rb') as f:
         chars, vocab = cPickle.load(f)
+    # test model
     model = Model(saved_args, True)
     with tf.Session() as sess:
         tf.initialize_all_variables().run()

@@ -7,12 +7,12 @@ import time
 import os
 from six.moves import cPickle
 
-from utils import TextLoader
+from utils_original import TextLoader
 from model import Model
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default='data/tinyshakespeare',
+    parser.add_argument('--data_dir', type=str, default='data/chef',
                        help='data directory containing input.txt')
     parser.add_argument('--save_dir', type=str, default='save',
                        help='directory to store checkpointed models')
@@ -78,9 +78,11 @@ def train(args):
         cPickle.dump(args, f)
     with open(os.path.join(args.save_dir, 'chars_vocab.pkl'), 'wb') as f:
         cPickle.dump((data_loader.chars, data_loader.vocab), f)
-        
+
+    # create rnn model
     model = Model(args)
 
+    # start tensorflow session
     with tf.Session() as sess:
         tf.initialize_all_variables().run()
         saver = tf.train.Saver(tf.all_variables())
@@ -92,8 +94,10 @@ def train(args):
             data_loader.reset_batch_pointer()
             state = model.initial_state.eval()
             for b in range(data_loader.num_batches):
+                # training step
                 start = time.time()
                 x, y = data_loader.next_batch()
+                # Initialize the LSTM state from the previous iteration.
                 feed = {model.input_data: x, model.targets: y, model.initial_state: state}
                 train_loss, state, _ = sess.run([model.cost, model.final_state, model.train_op], feed)
                 end = time.time()
