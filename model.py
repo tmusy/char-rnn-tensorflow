@@ -153,7 +153,30 @@ class ClassificationModel():
                                           initial_state=self.initial_state,
                                           scope='rnnlm')
 
+            output = tf.reshape(tf.concat(1, outputs), [-1, self.rnn_size])
 
+            # Output #
+            ##########
+            # create (or get) a variable with shape [rnn_size, vocab_size]
+            softmax_w = tf.get_variable("softmax_w", [self.rnn_size, self.vocab_size])
+            softmax_b = tf.get_variable("softmax_b", [self.vocab_size])
+            # last layer (like fully connected nn)
+            self.logits = tf.matmul(output, softmax_w) + softmax_b
+            # activation function of the last layer
+            self.probs = tf.nn.softmax(self.logits)
+
+        # loss function
+        loss = tf.nn.softmax_cross_entropy_with_logits(self.logits, tf.squeeze(self.targets))
+
+        # training function
+        self.cost = tf.reduce_sum(loss) / self.batch_size / self.seq_length
+        self.lr = tf.Variable(0.0, trainable=False)
+        tvars = tf.trainable_variables()
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.cost, tvars), self.grad_clip)
+        optimizer = tf.train.AdamOptimizer(self.lr)
+        self.train_op = optimizer.apply_gradients(zip(grads, tvars))
+
+        self.final_state = last_state
 
         if infer:
             args.batch_size = 1
